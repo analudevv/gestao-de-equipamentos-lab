@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoUsuario {
+  ADMIN
+  PROFESSOR
+}
+enum StatusEquipamento {
+  DISPONIVEL
+  MANUTENCAO
+}
+enum StatusReserva {
+  AGENDADA
+  CANCELADA
+  CONCLUIDA
+}
+model Usuario {
+  id          Int         @id @default(autoincrement())
+  nome        String
+  email       String      @unique
+  senha       String
+  tipoUsuario TipoUsuario @map("tipo_usuario")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  professor   Professor?
+  @@map("usuarios")
+}
+model Professor {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int      @unique @map("usuario_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id])
+  reservas   Reserva[]
+  @@map("professores")
+}
+model Equipamento {
+  id         Int               @id @default(autoincrement())
+  nome       String
+  tipo       String
+  status     StatusEquipamento @default(DISPONIVEL)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+  reservas   Reserva[]
+  @@map("equipamentos")
+}
+model Turma {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  reservas  Reserva[]
+  @@map("turmas")
+}
+model Reserva {
+  id            Int           @id @default(autoincrement())
+  professorId   Int           @map("professor_id")
+  turmaId       Int           @map("turma_id")
+  equipamentoId Int           @map("equipamento_id")
+  sala          String
+  data          DateTime      @db.Date
+  horaInicio    DateTime      @map("hora_inicio")
+  horaFim       DateTime      @map("hora_fim")
+  status        StatusReserva @default(AGENDADA)
+  devolvido     Boolean       @default(false)
+  dataDevolucao DateTime?     @map("data_devolucao")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  professor     Professor     @relation(fields: [professorId], references: [id])
+  turma         Turma         @relation(fields: [turmaId], references: [id])
+  equipamento   Equipamento   @relation(fields: [equipamentoId], references: [id])
+  @@map("reservas")
+}
